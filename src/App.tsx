@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import TitleBar from './components/TitleBar'
 
 import TabBar from './components/TabBar'
@@ -20,6 +20,7 @@ function App() {
   const [isMonitoring, setIsMonitoring] = useState(true)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [alwaysOnTop, setAlwaysOnTop] = useState(false)
+  const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.electronAPI) {
@@ -161,6 +162,13 @@ function App() {
     return allItems.filter(item => item.type === activeTab)
   }, [activeTab, allItems])
 
+  // Tab 切换后滚动到顶部
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0
+    }
+  }, [activeTab])
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       <TitleBar
@@ -177,7 +185,7 @@ function App() {
 
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} counts={{ all: allItems.length, text: textItems.length, image: imageItems.length }} />
 
-      <main className="flex-1 overflow-y-auto p-3">
+      <main ref={mainRef} className="flex-1 overflow-y-auto p-3">
         {displayItems.length === 0 ? (
           <EmptyState type={activeTab === 'all' ? 'text' : activeTab} />
         ) : activeTab === 'text' ? (
