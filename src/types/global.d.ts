@@ -30,10 +30,11 @@ export interface ElectronAPI {
   onClipboardImage: (callback: (dataUrl: string) => void) => () => void
   windowMinimize: () => Promise<boolean>
   windowClose: () => Promise<boolean>
-  getSettings: () => Promise<{ shortcut: string; closeBehavior: string; alwaysOnTop: boolean }>
+  getSettings: () => Promise<{ shortcut: string; closeBehavior: string; alwaysOnTop: boolean; theme: string }>
   setShortcut: (shortcut: string) => Promise<boolean>
   setCloseBehavior: (behavior: string) => Promise<boolean>
   setAlwaysOnTop: (alwaysOnTop: boolean) => Promise<boolean>
+  setTheme: (theme: string) => Promise<boolean>
   getPlatform: () => Promise<string>
 }
 

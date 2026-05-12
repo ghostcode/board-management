@@ -49,7 +49,7 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
       >
         <div onClick={onSelect} className="p-2 pb-0">
           <div
-            className="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden rounded"
+            className="aspect-video bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden rounded"
             onClick={handleImageClick}
             title="点击预览图片"
           >
@@ -70,7 +70,7 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
           <div className="flex items-center justify-end gap-1">
             <button
               onClick={(e) => { e.stopPropagation(); setIsPreviewOpen(true); }}
-              className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+              className="p-1 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-colors"
               title="预览"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

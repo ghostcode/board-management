@@ -16,7 +16,8 @@ const store = new Store({
     settings: {
       shortcut: process.platform === 'darwin' ? 'Command+V' : 'Super+V',
       closeBehavior: 'minimize',
-      alwaysOnTop: false
+      alwaysOnTop: false,
+      theme: 'light'
     }
   }
 })
@@ -358,6 +359,13 @@ ipcMain.handle('set-always-on-top', (_, alwaysOnTop: boolean) => {
   store.set('settings.alwaysOnTop', alwaysOnTop)
   mainWindow?.setAlwaysOnTop(alwaysOnTop)
   log.info('置顶状态更新:', alwaysOnTop)
+  return true
+})
+
+ipcMain.handle('set-theme', (_, theme: string) => {
+  store.set('settings.theme', theme)
+  mainWindow?.webContents.send('theme-changed', theme)
+  log.info('主题更新:', theme)
   return true
 })
 

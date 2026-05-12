@@ -42,10 +42,11 @@ const electronAPI = {
   },
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
   windowClose: () => ipcRenderer.invoke('window-close'),
-  getSettings: (): Promise<{ shortcut: string; closeBehavior: string; alwaysOnTop: boolean }> => ipcRenderer.invoke('get-settings'),
+  getSettings: (): Promise<{ shortcut: string; closeBehavior: string; alwaysOnTop: boolean; theme: string }> => ipcRenderer.invoke('get-settings'),
   setShortcut: (shortcut: string): Promise<boolean> => ipcRenderer.invoke('set-shortcut', shortcut),
   setCloseBehavior: (behavior: string): Promise<boolean> => ipcRenderer.invoke('set-close-behavior', behavior),
   setAlwaysOnTop: (alwaysOnTop: boolean): Promise<boolean> => ipcRenderer.invoke('set-always-on-top', alwaysOnTop),
+  setTheme: (theme: string): Promise<boolean> => ipcRenderer.invoke('set-theme', theme),
   getPlatform: (): Promise<string> => ipcRenderer.invoke('get-platform')
 }
 

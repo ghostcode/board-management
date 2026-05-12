@@ -6,7 +6,7 @@ import TextItemCard from './components/TextItem'
 import ImageItemCard from './components/ImageItem'
 import EmptyState from './components/EmptyState'
 import StatusBar from './components/StatusBar'
-import SettingsModal from './components/SettingsModal'
+import SettingsPage from './components/SettingsPage'
 import { TabType, TextItem, ImageItem } from './types'
 
 type ItemData = (TextItem & { type: 'text' }) | (ImageItem & { type: 'image' })
@@ -18,8 +18,9 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(true)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [currentView, setCurrentView] = useState<'home' | 'settings'>('home')
   const [alwaysOnTop, setAlwaysOnTop] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -28,9 +29,20 @@ function App() {
         if (settings?.alwaysOnTop !== undefined) {
           setAlwaysOnTop(settings.alwaysOnTop)
         }
+        if (settings?.theme) {
+          setIsDarkMode(settings.theme === 'dark')
+        }
       })
     }
-  }, [isSettingsOpen])
+  }, [])
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [isDarkMode])
 
   const showToast = useCallback((message: string) => {
     setToast(message)
@@ -170,106 +182,117 @@ function App() {
   }, [activeTab])
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      <TitleBar
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        alwaysOnTop={alwaysOnTop}
-        onToggleAlwaysOnTop={() => {
-          const newValue = !alwaysOnTop
-          setAlwaysOnTop(newValue)
-          if (window.electronAPI) {
-            window.electronAPI.setAlwaysOnTop(newValue)
-          }
-        }}
-      />
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950">
+      {currentView === 'home' ? (
+        <>
+          <TitleBar
+            onOpenSettings={() => setCurrentView('settings')}
+            alwaysOnTop={alwaysOnTop}
+            onToggleAlwaysOnTop={() => {
+              const newValue = !alwaysOnTop
+              setAlwaysOnTop(newValue)
+              if (window.electronAPI) {
+                window.electronAPI.setAlwaysOnTop(newValue)
+              }
+            }}
+          />
 
-      <TabBar activeTab={activeTab} onTabChange={setActiveTab} counts={{ all: allItems.length, text: textItems.length, image: imageItems.length }} />
+          <TabBar activeTab={activeTab} onTabChange={setActiveTab} counts={{ all: allItems.length, text: textItems.length, image: imageItems.length }} />
 
-      <main ref={mainRef} className="flex-1 overflow-y-auto p-3">
-        {displayItems.length === 0 ? (
-          <EmptyState type={activeTab === 'all' ? 'text' : activeTab} />
-        ) : activeTab === 'text' ? (
-          <div className="space-y-2">
-            {displayItems.map(item => (
-              <TextItemCard
-                key={item.id}
-                item={item as TextItem}
-                isSelected={selectedId === item.id}
-                onSelect={() => setSelectedId(item.id)}
-                onCopy={() => handleCopy(item)}
-                onDelete={() => handleDelete(item)}
-              />
-            ))}
-          </div>
-        ) : activeTab === 'image' ? (
-          <div className="grid grid-cols-2 gap-2">
-            {displayItems.map(item => (
-              <ImageItemCard
-                key={item.id}
-                item={item as ImageItem}
-                isSelected={selectedId === item.id}
-                onSelect={() => setSelectedId(item.id)}
-                onCopy={() => handleCopy(item)}
-                onDelete={() => handleDelete(item)}
-              />
-            ))}
-          </div>
-        ) : (
-          // all 类型：混合展示
-          <div className="space-y-2">
-            {displayItems.map(item => (
-              item.type === 'text' ? (
-                <TextItemCard
-                  key={item.id}
-                  item={item as TextItem}
-                  isSelected={selectedId === item.id}
-                  onSelect={() => setSelectedId(item.id)}
-                  onCopy={() => handleCopy(item)}
-                  onDelete={() => handleDelete(item)}
-                />
-              ) : (
-                <ImageItemCard
-                  key={item.id}
-                  item={item as ImageItem}
-                  isSelected={selectedId === item.id}
-                  onSelect={() => setSelectedId(item.id)}
-                  onCopy={() => handleCopy(item)}
-                  onDelete={() => handleDelete(item)}
-                />
-              )
-            ))}
-          </div>
-        )}
-      </main>
+          <main ref={mainRef} className="flex-1 overflow-y-auto p-3">
+            {displayItems.length === 0 ? (
+              <EmptyState type={activeTab === 'all' ? 'text' : activeTab} />
+            ) : activeTab === 'text' ? (
+              <div className="space-y-2">
+                {displayItems.map(item => (
+                  <TextItemCard
+                    key={item.id}
+                    item={item as TextItem}
+                    isSelected={selectedId === item.id}
+                    onSelect={() => setSelectedId(item.id)}
+                    onCopy={() => handleCopy(item)}
+                    onDelete={() => handleDelete(item)}
+                  />
+                ))}
+              </div>
+            ) : activeTab === 'image' ? (
+              <div className="grid grid-cols-2 gap-2">
+                {displayItems.map(item => (
+                  <ImageItemCard
+                    key={item.id}
+                    item={item as ImageItem}
+                    isSelected={selectedId === item.id}
+                    onSelect={() => setSelectedId(item.id)}
+                    onCopy={() => handleCopy(item)}
+                    onDelete={() => handleDelete(item)}
+                  />
+                ))}
+              </div>
+            ) : (
+              // all 类型：混合展示
+              <div className="space-y-2">
+                {displayItems.map(item => (
+                  item.type === 'text' ? (
+                    <TextItemCard
+                      key={item.id}
+                      item={item as TextItem}
+                      isSelected={selectedId === item.id}
+                      onSelect={() => setSelectedId(item.id)}
+                      onCopy={() => handleCopy(item)}
+                      onDelete={() => handleDelete(item)}
+                    />
+                  ) : (
+                    <ImageItemCard
+                      key={item.id}
+                      item={item as ImageItem}
+                      isSelected={selectedId === item.id}
+                      onSelect={() => setSelectedId(item.id)}
+                      onCopy={() => handleCopy(item)}
+                      onDelete={() => handleDelete(item)}
+                    />
+                  )
+                ))}
+              </div>
+            )}
+          </main>
 
-      <StatusBar
-        textCount={textItems.length}
-        imageCount={imageItems.length}
-        activeTab={activeTab}
-        isMonitoring={isMonitoring}
-      />
+          <StatusBar
+            textCount={textItems.length}
+            imageCount={imageItems.length}
+            activeTab={activeTab}
+            isMonitoring={isMonitoring}
+          />
 
-      {toast && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg animate-fade-in">
-          {toast}
-        </div>
+          {toast && (
+            <div className="fixed bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg animate-fade-in">
+              {toast}
+            </div>
+          )}
+        </>
+      ) : (
+        <SettingsPage
+          onBack={() => setCurrentView('home')}
+          isMonitoring={isMonitoring}
+          onToggleMonitor={() => setIsMonitoring(!isMonitoring)}
+          onClearAll={handleClearAll}
+          alwaysOnTop={alwaysOnTop}
+          onToggleAlwaysOnTop={() => {
+            const newValue = !alwaysOnTop
+            setAlwaysOnTop(newValue)
+            if (window.electronAPI) {
+              window.electronAPI.setAlwaysOnTop(newValue)
+            }
+          }}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={() => {
+            const newValue = !isDarkMode
+            setIsDarkMode(newValue)
+            if (window.electronAPI) {
+              window.electronAPI.setTheme(newValue ? 'dark' : 'light')
+            }
+          }}
+        />
       )}
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        isMonitoring={isMonitoring}
-        onToggleMonitor={() => setIsMonitoring(!isMonitoring)}
-        onClearAll={handleClearAll}
-        alwaysOnTop={alwaysOnTop}
-        onToggleAlwaysOnTop={() => {
-          const newValue = !alwaysOnTop
-          setAlwaysOnTop(newValue)
-          if (window.electronAPI) {
-            window.electronAPI.setAlwaysOnTop(newValue)
-          }
-        }}
-      />
     </div>
   )
 }

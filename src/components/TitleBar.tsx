@@ -16,7 +16,7 @@ function TitleBar({ onOpenSettings, alwaysOnTop, onToggleAlwaysOnTop }: TitleBar
 
   return (
     <div
-      className="flex items-center justify-between h-8 bg-white select-none"
+      className="flex items-center justify-between h-8 bg-white dark:bg-gray-900 select-none"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       <div className="flex items-center gap-1.5 px-3">
@@ -26,7 +26,7 @@ function TitleBar({ onOpenSettings, alwaysOnTop, onToggleAlwaysOnTop }: TitleBar
           className="w-4 h-4"
           draggable={false}
         />
-        <span className="text-sm font-medium text-gray-700">粘贴板管理</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">粘贴板管理</span>
       </div>
 
       <div className="flex items-center" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
@@ -34,8 +34,8 @@ function TitleBar({ onOpenSettings, alwaysOnTop, onToggleAlwaysOnTop }: TitleBar
           onClick={onToggleAlwaysOnTop}
           className={`flex items-center justify-center w-10 h-8 transition-colors ${
             alwaysOnTop
-              ? 'text-indigo-600 bg-indigo-50'
-              : 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50'
+              ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
+              : 'text-gray-500 dark:text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
           }`}
           title={alwaysOnTop ? '取消置顶' : '置顶窗口'}
         >
@@ -51,7 +51,7 @@ function TitleBar({ onOpenSettings, alwaysOnTop, onToggleAlwaysOnTop }: TitleBar
         </button>
         <button
           onClick={onOpenSettings}
-          className="flex items-center justify-center w-10 h-8 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          className="flex items-center justify-center w-10 h-8 text-gray-600 dark:text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
           title="设置"
         >
           <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -61,7 +61,7 @@ function TitleBar({ onOpenSettings, alwaysOnTop, onToggleAlwaysOnTop }: TitleBar
         </button>
         <button
           onClick={handleMinimize}
-          className="flex items-center justify-center w-10 h-8 text-gray-500 hover:bg-gray-100 transition-colors"
+          className="flex items-center justify-center w-10 h-8 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           title="最小化"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

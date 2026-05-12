@@ -39,24 +39,24 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
   return (
     <div
       onClick={onSelect}
-      className={`p-3 bg-white rounded-lg border transition-all cursor-pointer animate-fade-in ${
+      className={`p-3 bg-white dark:bg-gray-800 rounded-lg border transition-all cursor-pointer animate-fade-in ${
         isSelected
           ? 'border-indigo-500 shadow-md'
-          : 'border-transparent hover:border-gray-200 hover:shadow-sm'
+          : 'border-transparent hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm'
       }`}
     >
       {isCode && highlightedHtml ? (
-        <pre className="hljs text-xs font-mono bg-gray-50 p-2 rounded max-h-40 overflow-y-auto">
+        <pre className="hljs text-xs font-mono p-2 rounded max-h-40 overflow-y-auto">
           <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
         </pre>
       ) : (
-        <div className="text-sm text-gray-800 max-h-32 overflow-y-auto whitespace-pre-wrap break-words">
+        <div className="text-sm text-gray-800 dark:text-gray-200 max-h-32 overflow-y-auto whitespace-pre-wrap break-words">
           {previewContent}
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-        <div className="flex items-center gap-3 text-xs text-gray-400">
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
           <span>{formatTime(item.timestamp)}</span>
           <span>{item.charCount} 字符</span>
         </div>
@@ -64,7 +64,7 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
         <div className="flex items-center gap-1">
           <button
             onClick={(e) => { e.stopPropagation(); onCopy(); }}
-            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-colors"
             title="复制"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -74,7 +74,7 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
             title="删除"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
