@@ -195,18 +195,28 @@ function SettingsPage({ onBack, isMonitoring, onToggleMonitor, onClearAll, alway
             </label>
             <div className="flex gap-2">
               <button
-                onClick={onToggleDarkMode}
+                onClick={() => isDarkMode && onToggleDarkMode()}
+                className={`flex-1 px-3 py-2 text-sm border rounded-lg transition-colors ${
+                  !isDarkMode
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                浅色模式
+              </button>
+              <button
+                onClick={() => !isDarkMode && onToggleDarkMode()}
                 className={`flex-1 px-3 py-2 text-sm border rounded-lg transition-colors ${
                   isDarkMode
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                     : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                {isDarkMode ? '暗黑模式' : '浅色模式'}
+                暗黑模式
               </button>
             </div>
             <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
-              切换应用整体外观风格
+              选择应用整体外观风格
             </p>
           </div>
 
