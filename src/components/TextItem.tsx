@@ -39,6 +39,7 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
   return (
     <div
       onClick={onSelect}
+      data-item-id={item.id}
       className={`p-3 bg-white dark:bg-gray-800 rounded-lg border transition-all cursor-pointer animate-fade-in ${
         isSelected
           ? 'border-indigo-500 shadow-md'

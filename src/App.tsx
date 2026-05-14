@@ -15,7 +15,24 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabType>('all')
   const [textItems, setTextItems] = useState<TextItem[]>([])
   const [imageItems, setImageItems] = useState<ImageItem[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [tabState, setTabState] = useState<Record<TabType, { selectedId: string | null }>>({
+    all: { selectedId: null },
+    text: { selectedId: null },
+    image: { selectedId: null },
+  })
+  const scrollPositions = useRef<Record<TabType, number>>({ all: 0, text: 0, image: 0 })
+  const prevTabRef = useRef<TabType>(activeTab)
+
+  const selectedId = tabState[activeTab].selectedId
+  const setSelectedId = (id: string | null) => {
+    setTabState(prev => ({ ...prev, [activeTab]: { ...prev[activeTab], selectedId: id } }))
+  }
+  const handleTabChange = (tab: TabType) => {
+    if (mainRef.current) {
+      scrollPositions.current[activeTab] = mainRef.current.scrollTop
+    }
+    setActiveTab(tab)
+  }
   const [toast, setToast] = useState<string | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(true)
   const [currentView, setCurrentView] = useState<'home' | 'settings'>('home')
@@ -154,32 +171,104 @@ function App() {
     }
   }
 
-  // 键盘快捷键
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Delete' && selectedId) {
-        const item = allItems.find(i => i.id === selectedId)
-        if (item) handleDelete(item)
-        setSelectedId(null)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedId, allItems])
-
   // 根据当前标签筛选项目
   const displayItems = useMemo(() => {
     if (activeTab === 'all') return allItems
     return allItems.filter(item => item.type === activeTab)
   }, [activeTab, allItems])
 
-  // Tab 切换后滚动到顶部
+  // 键盘快捷键
   useEffect(() => {
-    if (mainRef.current) {
-      mainRef.current.scrollTop = 0
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 只在主页视图响应快捷键
+      if (currentView !== 'home') return
+
+      const tabs: TabType[] = ['all', 'text', 'image']
+      const currentTabIndex = tabs.indexOf(activeTab)
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        const nextIndex = (currentTabIndex + 1) % tabs.length
+        handleTabChange(tabs[nextIndex])
+        return
+      }
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        const prevIndex = (currentTabIndex - 1 + tabs.length) % tabs.length
+        handleTabChange(tabs[prevIndex])
+        return
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (displayItems.length === 0) return
+        if (!selectedId) {
+          setSelectedId(displayItems[0].id)
+        } else {
+          const currentIndex = displayItems.findIndex(i => i.id === selectedId)
+          const nextIndex = Math.min(currentIndex + 1, displayItems.length - 1)
+          setSelectedId(displayItems[nextIndex].id)
+        }
+        return
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (displayItems.length === 0) return
+        if (!selectedId) {
+          setSelectedId(displayItems[0].id)
+        } else {
+          const currentIndex = displayItems.findIndex(i => i.id === selectedId)
+          const prevIndex = Math.max(currentIndex - 1, 0)
+          setSelectedId(displayItems[prevIndex].id)
+        }
+        return
+      }
+
+      if (e.key === 'Enter' && selectedId) {
+        e.preventDefault()
+        const item = displayItems.find(i => i.id === selectedId)
+        if (item) handleCopy(item)
+        return
+      }
+
+      if (e.key === 'Delete' && selectedId) {
+        const item = displayItems.find(i => i.id === selectedId)
+        if (item) {
+          handleDelete(item)
+          // 删除后自动选中下一个项目
+          const currentIndex = displayItems.findIndex(i => i.id === selectedId)
+          const nextItem = displayItems[currentIndex + 1] || displayItems[currentIndex - 1]
+          setSelectedId(nextItem ? nextItem.id : null)
+        }
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedId, displayItems, activeTab, currentView, handleCopy, handleDelete])
+
+  // Tab 切换时保存/恢复滚动位置
+  useEffect(() => {
+    if (prevTabRef.current !== activeTab) {
+      if (mainRef.current) {
+        scrollPositions.current[prevTabRef.current] = mainRef.current.scrollTop
+        mainRef.current.scrollTop = scrollPositions.current[activeTab]
+      }
+      prevTabRef.current = activeTab
     }
   }, [activeTab])
+
+  // 选中项变化时滚动到可视区域
+  useEffect(() => {
+    if (!selectedId) return
+    const el = document.querySelector(`[data-item-id="${selectedId}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [selectedId])
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950">
@@ -197,7 +286,7 @@ function App() {
             }}
           />
 
-          <TabBar activeTab={activeTab} onTabChange={setActiveTab} counts={{ all: allItems.length, text: textItems.length, image: imageItems.length }} />
+          <TabBar activeTab={activeTab} onTabChange={handleTabChange} counts={{ all: allItems.length, text: textItems.length, image: imageItems.length }} />
 
           <main ref={mainRef} className="flex-1 overflow-y-auto p-3">
             {displayItems.length === 0 ? (

@@ -41,6 +41,7 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
   return (
     <>
       <div
+        data-item-id={item.id}
         className={`bg-white rounded-lg border overflow-hidden transition-all cursor-pointer animate-fade-in ${
           isSelected
             ? 'border-indigo-500 shadow-md'

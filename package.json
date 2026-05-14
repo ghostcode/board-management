@@ -47,7 +47,7 @@
     "appId": "com.clipboard.manager",
     "productName": "ClipBoard Manager",
     "directories": {
-      "output": "release-v11"
+      "output": "release-v13"
     },
     "files": [
       "dist/**/*",
