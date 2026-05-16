@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { TextItem as TextItemType } from '../types'
 import hljs from 'highlight.js'
 
@@ -10,6 +11,7 @@ interface TextItemProps {
 }
 
 function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProps) {
+  const [copied, setCopied] = useState(false)
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
     const now = new Date()
@@ -64,14 +66,29 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
 
         <div className="flex items-center gap-1">
           <button
-            onClick={(e) => { e.stopPropagation(); onCopy(); }}
-            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-colors"
-            title="复制"
+            onClick={(e) => {
+              e.stopPropagation()
+              onCopy()
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2000)
+            }}
+            className={`p-1.5 rounded transition-colors ${
+              copied
+                ? 'text-green-600 bg-green-50 dark:bg-green-900/20'
+                : 'text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
+            }`}
+            title={copied ? '已复制' : '复制'}
           >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
+            {copied ? (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            )}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}

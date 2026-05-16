@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import confetti from 'canvas-confetti'
 import TitleBar from './components/TitleBar'
 
 import TabBar from './components/TabBar'
@@ -38,6 +39,7 @@ function App() {
   const [currentView, setCurrentView] = useState<'home' | 'settings'>('home')
   const [alwaysOnTop, setAlwaysOnTop] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [showBackToTop, setShowBackToTop] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -119,14 +121,12 @@ function App() {
   const handleCopyText = async (item: TextItem) => {
     if (window.electronAPI) {
       await window.electronAPI.copyToClipboard('text', item.content)
-      showToast('已复制到粘贴板')
     }
   }
 
   const handleCopyImage = async (item: ImageItem) => {
     if (window.electronAPI) {
       await window.electronAPI.copyToClipboard('image', item.dataUrl)
-      showToast('已复制到粘贴板')
     }
   }
 
@@ -160,6 +160,25 @@ function App() {
     } else {
       handleCopyImage(item)
     }
+    const count = 200
+    const defaults: confetti.Options = {
+      origin: { y: 0.7 },
+      zIndex: 9999,
+    }
+
+    function fire(particleRatio: number, opts: confetti.Options) {
+      confetti({
+        ...defaults,
+        ...opts,
+        particleCount: Math.floor(count * particleRatio),
+      })
+    }
+
+    fire(0.25, { spread: 26, startVelocity: 55 })
+    fire(0.2, { spread: 60 })
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 })
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 })
+    fire(0.1, { spread: 120, startVelocity: 45 })
   }
 
   const handleClearAll = async () => {
@@ -261,6 +280,15 @@ function App() {
     }
   }, [activeTab])
 
+  // 监听滚动显示回到顶部按钮
+  useEffect(() => {
+    const el = mainRef.current
+    if (!el) return
+    const onScroll = () => setShowBackToTop(el.scrollTop > 200)
+    el.addEventListener('scroll', onScroll)
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
   // 选中项变化时滚动到可视区域
   useEffect(() => {
     if (!selectedId) return
@@ -344,6 +372,23 @@ function App() {
               </div>
             )}
           </main>
+
+          {showBackToTop && (
+            <button
+              onClick={() => {
+                if (mainRef.current) {
+                  mainRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+                  scrollPositions.current[activeTab] = 0
+                }
+              }}
+              className="absolute bottom-14 right-4 z-40 w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              title="回到顶部"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 15l-6-6-6 6" />
+              </svg>
+            </button>
+          )}
 
           <StatusBar
             textCount={textItems.length}
