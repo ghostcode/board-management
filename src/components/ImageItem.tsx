@@ -1,42 +1,43 @@
-import { useState } from 'react'
+import { useState, memo, useCallback } from 'react'
 import { ImageItem as ImageItemType } from '../types'
 import ImagePreviewModal from './ImagePreviewModal'
+import { formatTime } from '../utils/time'
 
 interface ImageItemProps {
   item: ImageItemType
   isSelected: boolean
-  onSelect: () => void
-  onCopy: () => void
-  onDelete: () => void
+  onSelect: (id: string) => void
+  onCopy: (item: ImageItemType) => void
+  onDelete: (id: string) => void
 }
 
 function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemProps) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const handleImageClick = (e: React.MouseEvent) => {
+  const handleImageClick = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button')) {
       return
     }
     setIsPreviewOpen(true)
-  }
+  }, [])
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
+  const handlePreview = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsPreviewOpen(true)
+  }, [])
 
-    if (diff < 60000) return '刚刚'
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+  const handleCopyClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onCopy(item)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [onCopy, item])
 
-    return date.toLocaleDateString('zh-CN', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+  const handleDeleteClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDelete(item.id)
+  }, [onDelete, item.id])
 
   return (
     <>
@@ -47,7 +48,7 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
             : 'border-transparent hover:border-gray-200 hover:shadow-sm'
         }`}
       >
-        <div onClick={onSelect} className="p-2 pb-0">
+        <div onClick={() => onSelect(item.id)} className="p-2 pb-0">
           <div
             className="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden rounded"
             onClick={handleImageClick}
@@ -56,12 +57,13 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
             <img
               src={item.dataUrl}
               alt="粘贴图片"
+              loading="lazy"
               className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-200"
             />
           </div>
         </div>
 
-        <div className="p-2" onClick={onSelect}>
+        <div className="p-2" onClick={() => onSelect(item.id)}>
           <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>{formatTime(item.timestamp)}</span>
             <span>{item.width}×{item.height}</span>
@@ -69,7 +71,7 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
 
           <div className="flex items-center justify-end gap-1">
             <button
-              onClick={(e) => { e.stopPropagation(); setIsPreviewOpen(true) }}
+              onClick={handlePreview}
               className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
               title="预览"
             >
@@ -79,12 +81,7 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
               </svg>
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onCopy()
-                setCopied(true)
-                setTimeout(() => setCopied(false), 2000)
-              }}
+              onClick={handleCopyClick}
               className={`p-1 rounded transition-colors ${
                 copied
                   ? 'text-green-600 bg-green-50 dark:bg-green-900/20'
@@ -104,26 +101,28 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
               )}
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              onClick={handleDeleteClick}
               className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
               title="删除"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="3,6 5,6 21,6"/>
-                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0 0,1-2-2V6M8,6V4a2,2,0 0 1 2-2h4a2,2,0 0 1 2,2V6"/>
+                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0 0,1-2-2V6M8,6V4a2,2,0 0,1 2-2h4a2,2,0 0,1 2,2V6"/>
               </svg>
             </button>
           </div>
         </div>
       </div>
 
-      <ImagePreviewModal
-        isOpen={isPreviewOpen}
-        imageUrl={item.dataUrl}
-        onClose={() => setIsPreviewOpen(false)}
-      />
+      {isPreviewOpen && (
+        <ImagePreviewModal
+          isOpen={isPreviewOpen}
+          imageUrl={item.dataUrl}
+          onClose={() => setIsPreviewOpen(false)}
+        />
+      )}
     </>
   )
 }
 
-export default ImageItem
+export default memo(ImageItem)

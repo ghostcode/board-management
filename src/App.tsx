@@ -12,6 +12,42 @@ import { TabType, TextItem, ImageItem } from './types'
 
 type ItemData = (TextItem & { type: 'text' }) | (ImageItem & { type: 'image' })
 
+function BackToTopButton({ mainRef, activeTab, scrollPositions }: { 
+  mainRef: React.RefObject<HTMLElement>
+  activeTab: TabType
+  scrollPositions: React.MutableRefObject<Record<TabType, number>>
+}) {
+  const [show, setShow] = useState(false)
+
+  useEffect(() => {
+    const el = mainRef.current
+    if (!el) return
+    const onScroll = () => setShow(el.scrollTop > 200)
+    el.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [mainRef])
+
+  if (!show) return null
+
+  return (
+    <button
+      onClick={() => {
+        if (mainRef.current) {
+          mainRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+          scrollPositions.current[activeTab] = 0
+        }
+      }}
+      className="absolute bottom-14 right-4 z-40 w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+      title="回到顶部"
+    >
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M18 15l-6-6-6 6" />
+      </svg>
+    </button>
+  )
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('all')
   const [textItems, setTextItems] = useState<TextItem[]>([])
@@ -25,21 +61,22 @@ function App() {
   const prevTabRef = useRef<TabType>(activeTab)
 
   const selectedId = tabState[activeTab].selectedId
-  const setSelectedId = (id: string | null) => {
+  const setSelectedId = useCallback((id: string | null) => {
     setTabState(prev => ({ ...prev, [activeTab]: { ...prev[activeTab], selectedId: id } }))
-  }
-  const handleTabChange = (tab: TabType) => {
+  }, [activeTab])
+  
+  const handleTabChange = useCallback((tab: TabType) => {
     if (mainRef.current) {
       scrollPositions.current[activeTab] = mainRef.current.scrollTop
     }
     setActiveTab(tab)
-  }
+  }, [activeTab])
+  
   const [toast, setToast] = useState<string | null>(null)
   const [isMonitoring, setIsMonitoring] = useState(true)
   const [currentView, setCurrentView] = useState<'home' | 'settings'>('home')
   const [alwaysOnTop, setAlwaysOnTop] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
-  const [showBackToTop, setShowBackToTop] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -77,6 +114,81 @@ function App() {
     return merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
   }, [textItems, imageItems])
 
+  const loadData = useCallback(async () => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      const data = await window.electronAPI.getClipboardData()
+      setTextItems(data.textItems.map(item => ({ ...item, type: 'text' as const })))
+      setImageItems(data.imageItems.map(item => ({ ...item, type: 'image' as const })))
+    }
+  }, [])
+
+  const triggerConfetti = useCallback(() => {
+    const count = 200
+    const defaults: confetti.Options = {
+      origin: { y: 0.7 },
+      zIndex: 9999,
+    }
+
+    function fire(particleRatio: number, opts: confetti.Options) {
+      confetti({
+        ...defaults,
+        ...opts,
+        particleCount: Math.floor(count * particleRatio),
+      })
+    }
+
+    fire(0.25, { spread: 26, startVelocity: 55 })
+    fire(0.2, { spread: 60 })
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 })
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 })
+    fire(0.1, { spread: 120, startVelocity: 45 })
+  }, [])
+
+  const handleCopyText = useCallback(async (item: TextItem) => {
+    if (window.electronAPI) {
+      await window.electronAPI.copyToClipboard('text', item.content)
+      triggerConfetti()
+    }
+  }, [triggerConfetti])
+
+  const handleCopyImage = useCallback(async (item: ImageItem) => {
+    if (window.electronAPI) {
+      await window.electronAPI.copyToClipboard('image', item.dataUrl)
+      triggerConfetti()
+    }
+  }, [triggerConfetti])
+
+  const handleDeleteText = useCallback(async (id: string) => {
+    if (window.electronAPI) {
+      await window.electronAPI.deleteTextItem(id)
+      setTextItems(prev => prev.filter(item => item.id !== id))
+      showToast('已删除')
+    }
+  }, [showToast])
+
+  const handleDeleteImage = useCallback(async (id: string) => {
+    if (window.electronAPI) {
+      await window.electronAPI.deleteImageItem(id)
+      setImageItems(prev => prev.filter(item => item.id !== id))
+      showToast('已删除')
+    }
+  }, [showToast])
+
+  const handleClearAll = useCallback(async () => {
+    if (window.electronAPI) {
+      await window.electronAPI.clearAll()
+      setTextItems([])
+      setImageItems([])
+      showToast('已清空全部')
+    }
+  }, [showToast])
+
+  // 根据当前标签筛选项目
+  const displayItems = useMemo(() => {
+    if (activeTab === 'all') return allItems
+    return allItems.filter(item => item.type === activeTab)
+  }, [activeTab, allItems])
+
   // 加载数据并监听粘贴板
   useEffect(() => {
     loadData()
@@ -108,93 +220,7 @@ function App() {
         unsubImage()
       }
     }
-  }, [showToast])
-
-  const loadData = async () => {
-    if (typeof window !== 'undefined' && window.electronAPI) {
-      const data = await window.electronAPI.getClipboardData()
-      setTextItems(data.textItems.map(item => ({ ...item, type: 'text' as const })))
-      setImageItems(data.imageItems.map(item => ({ ...item, type: 'image' as const })))
-    }
-  }
-
-  const handleCopyText = async (item: TextItem) => {
-    if (window.electronAPI) {
-      await window.electronAPI.copyToClipboard('text', item.content)
-    }
-  }
-
-  const handleCopyImage = async (item: ImageItem) => {
-    if (window.electronAPI) {
-      await window.electronAPI.copyToClipboard('image', item.dataUrl)
-    }
-  }
-
-  const handleDeleteText = async (id: string) => {
-    if (window.electronAPI) {
-      await window.electronAPI.deleteTextItem(id)
-      setTextItems(prev => prev.filter(item => item.id !== id))
-      showToast('已删除')
-    }
-  }
-
-  const handleDeleteImage = async (id: string) => {
-    if (window.electronAPI) {
-      await window.electronAPI.deleteImageItem(id)
-      setImageItems(prev => prev.filter(item => item.id !== id))
-      showToast('已删除')
-    }
-  }
-
-  const handleDelete = (item: ItemData) => {
-    if (item.type === 'text') {
-      handleDeleteText(item.id)
-    } else {
-      handleDeleteImage(item.id)
-    }
-  }
-
-  const handleCopy = (item: ItemData) => {
-    if (item.type === 'text') {
-      handleCopyText(item)
-    } else {
-      handleCopyImage(item)
-    }
-    const count = 200
-    const defaults: confetti.Options = {
-      origin: { y: 0.7 },
-      zIndex: 9999,
-    }
-
-    function fire(particleRatio: number, opts: confetti.Options) {
-      confetti({
-        ...defaults,
-        ...opts,
-        particleCount: Math.floor(count * particleRatio),
-      })
-    }
-
-    fire(0.25, { spread: 26, startVelocity: 55 })
-    fire(0.2, { spread: 60 })
-    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 })
-    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 })
-    fire(0.1, { spread: 120, startVelocity: 45 })
-  }
-
-  const handleClearAll = async () => {
-    if (window.electronAPI) {
-      await window.electronAPI.clearAll()
-      setTextItems([])
-      setImageItems([])
-      showToast('已清空全部')
-    }
-  }
-
-  // 根据当前标签筛选项目
-  const displayItems = useMemo(() => {
-    if (activeTab === 'all') return allItems
-    return allItems.filter(item => item.type === activeTab)
-  }, [activeTab, allItems])
+  }, [showToast, loadData])
 
   // 键盘快捷键
   useEffect(() => {
@@ -248,14 +274,24 @@ function App() {
       if (e.key === 'Enter' && selectedId) {
         e.preventDefault()
         const item = displayItems.find(i => i.id === selectedId)
-        if (item) handleCopy(item)
+        if (item) {
+          if (item.type === 'text') {
+            handleCopyText(item)
+          } else {
+            handleCopyImage(item)
+          }
+        }
         return
       }
 
       if (e.key === 'Delete' && selectedId) {
         const item = displayItems.find(i => i.id === selectedId)
         if (item) {
-          handleDelete(item)
+          if (item.type === 'text') {
+            handleDeleteText(item.id)
+          } else {
+            handleDeleteImage(item.id)
+          }
           // 删除后自动选中下一个项目
           const currentIndex = displayItems.findIndex(i => i.id === selectedId)
           const nextItem = displayItems[currentIndex + 1] || displayItems[currentIndex - 1]
@@ -267,7 +303,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedId, displayItems, activeTab, currentView, handleCopy, handleDelete])
+  }, [selectedId, displayItems, activeTab, currentView, handleTabChange, handleCopyText, handleCopyImage, handleDeleteText, handleDeleteImage, setSelectedId])
 
   // Tab 切换时保存/恢复滚动位置
   useEffect(() => {
@@ -279,15 +315,6 @@ function App() {
       prevTabRef.current = activeTab
     }
   }, [activeTab])
-
-  // 监听滚动显示回到顶部按钮
-  useEffect(() => {
-    const el = mainRef.current
-    if (!el) return
-    const onScroll = () => setShowBackToTop(el.scrollTop > 200)
-    el.addEventListener('scroll', onScroll)
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [])
 
   // 选中项变化时滚动到可视区域
   useEffect(() => {
@@ -326,9 +353,9 @@ function App() {
                     key={item.id}
                     item={item as TextItem}
                     isSelected={selectedId === item.id}
-                    onSelect={() => setSelectedId(item.id)}
-                    onCopy={() => handleCopy(item)}
-                    onDelete={() => handleDelete(item)}
+                    onSelect={setSelectedId}
+                    onCopy={handleCopyText}
+                    onDelete={handleDeleteText}
                   />
                 ))}
               </div>
@@ -339,9 +366,9 @@ function App() {
                     key={item.id}
                     item={item as ImageItem}
                     isSelected={selectedId === item.id}
-                    onSelect={() => setSelectedId(item.id)}
-                    onCopy={() => handleCopy(item)}
-                    onDelete={() => handleDelete(item)}
+                    onSelect={setSelectedId}
+                    onCopy={handleCopyImage}
+                    onDelete={handleDeleteImage}
                   />
                 ))}
               </div>
@@ -354,18 +381,18 @@ function App() {
                       key={item.id}
                       item={item as TextItem}
                       isSelected={selectedId === item.id}
-                      onSelect={() => setSelectedId(item.id)}
-                      onCopy={() => handleCopy(item)}
-                      onDelete={() => handleDelete(item)}
+                      onSelect={setSelectedId}
+                      onCopy={handleCopyText}
+                      onDelete={handleDeleteText}
                     />
                   ) : (
                     <ImageItemCard
                       key={item.id}
                       item={item as ImageItem}
                       isSelected={selectedId === item.id}
-                      onSelect={() => setSelectedId(item.id)}
-                      onCopy={() => handleCopy(item)}
-                      onDelete={() => handleDelete(item)}
+                      onSelect={setSelectedId}
+                      onCopy={handleCopyImage}
+                      onDelete={handleDeleteImage}
                     />
                   )
                 ))}
@@ -373,22 +400,7 @@ function App() {
             )}
           </main>
 
-          {showBackToTop && (
-            <button
-              onClick={() => {
-                if (mainRef.current) {
-                  mainRef.current.scrollTo({ top: 0, behavior: 'smooth' })
-                  scrollPositions.current[activeTab] = 0
-                }
-              }}
-              className="absolute bottom-14 right-4 z-40 w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              title="回到顶部"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 15l-6-6-6 6" />
-              </svg>
-            </button>
-          )}
+          <BackToTopButton mainRef={mainRef} activeTab={activeTab} scrollPositions={scrollPositions} />
 
           <StatusBar
             textCount={textItems.length}

@@ -1,46 +1,57 @@
-import { useState } from 'react'
+import { useState, useMemo, memo, useCallback, useEffect } from 'react'
 import { TextItem as TextItemType } from '../types'
-import hljs from 'highlight.js'
+import { formatTime } from '../utils/time'
 
 interface TextItemProps {
   item: TextItemType
   isSelected: boolean
-  onSelect: () => void
-  onCopy: () => void
-  onDelete: () => void
+  onSelect: (id: string) => void
+  onCopy: (item: TextItemType) => void
+  onDelete: (id: string) => void
 }
 
 function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProps) {
   const [copied, setCopied] = useState(false)
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
+  const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null)
 
-    if (diff < 60000) return '刚刚'
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+  const { isCode, previewContent } = useMemo(() => {
+    const isCode = /[`{}()\[\];]/.test(item.content) || item.content.includes('\n')
+    const previewContent = item.content.length > 500
+      ? item.content.slice(0, 500) + '...'
+      : item.content
+    return { isCode, previewContent }
+  }, [item.content])
 
-    return date.toLocaleDateString('zh-CN', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  // 使用精简版 highlight.js（仅注册常用语言），中文内容自动作为普通文本处理
+  useEffect(() => {
+    if (!isCode) {
+      setHighlightedHtml(null)
+      return
+    }
+    let cancelled = false
+    import('../utils/highlightCode').then(({ highlightCode }) => {
+      if (cancelled) return
+      const result = highlightCode(previewContent)
+      setHighlightedHtml(result)
     })
-  }
+    return () => { cancelled = true }
+  }, [isCode, previewContent])
 
-  const isCode = /[`{}()\[\];]/.test(item.content) || item.content.includes('\n')
-  const previewContent = item.content.length > 500
-    ? item.content.slice(0, 500) + '...'
-    : item.content
+  const handleCopyClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onCopy(item)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [onCopy, item])
 
-  const highlightedHtml = isCode
-    ? hljs.highlightAuto(previewContent).value
-    : null
+  const handleDeleteClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDelete(item.id)
+  }, [onDelete, item.id])
 
   return (
     <div
-      onClick={onSelect}
+      onClick={() => onSelect(item.id)}
       data-item-id={item.id}
       className={`p-3 bg-white dark:bg-gray-800 rounded-lg border transition-all cursor-pointer animate-fade-in ${
         isSelected
@@ -66,12 +77,7 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
 
         <div className="flex items-center gap-1">
           <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onCopy()
-              setCopied(true)
-              setTimeout(() => setCopied(false), 2000)
-            }}
+            onClick={handleCopyClick}
             className={`p-1.5 rounded transition-colors ${
               copied
                 ? 'text-green-600 bg-green-50 dark:bg-green-900/20'
@@ -91,13 +97,13 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
             )}
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            onClick={handleDeleteClick}
             className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
             title="删除"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="3,6 5,6 21,6"/>
-              <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+              <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6M8,6V4a2,2,0,0,1 2-2h4a2,2,0,0,1 2,2V6"/>
             </svg>
           </button>
         </div>
@@ -106,4 +112,4 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
   )
 }
 
-export default TextItem
+export default memo(TextItem)
