@@ -280,6 +280,8 @@ function App() {
           } else {
             handleCopyImage(item)
           }
+          // 通知子组件显示复制成功反馈（复制按钮变对号）
+          window.dispatchEvent(new CustomEvent('item-copied', { detail: selectedId }))
         }
         return
       }

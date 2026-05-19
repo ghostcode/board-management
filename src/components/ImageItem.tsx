@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from 'react'
+import { useState, memo, useCallback, useEffect } from 'react'
 import { ImageItem as ImageItemType } from '../types'
 import ImagePreviewModal from './ImagePreviewModal'
 import { formatTime } from '../utils/time'
@@ -39,9 +39,22 @@ function ImageItem({ item, isSelected, onSelect, onCopy, onDelete }: ImageItemPr
     onDelete(item.id)
   }, [onDelete, item.id])
 
+  // 监听键盘回车触发的复制事件，同步复制按钮状态
+  useEffect(() => {
+    const handleCopied = (e: Event) => {
+      if ((e as CustomEvent).detail === item.id) {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
+    }
+    window.addEventListener('item-copied', handleCopied)
+    return () => window.removeEventListener('item-copied', handleCopied)
+  }, [item.id])
+
   return (
     <>
       <div
+        data-item-id={item.id}
         className={`bg-white rounded-lg border overflow-hidden transition-all cursor-pointer animate-fade-in ${
           isSelected
             ? 'border-indigo-500 shadow-md'

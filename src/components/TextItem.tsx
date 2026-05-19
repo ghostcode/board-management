@@ -49,6 +49,18 @@ function TextItem({ item, isSelected, onSelect, onCopy, onDelete }: TextItemProp
     onDelete(item.id)
   }, [onDelete, item.id])
 
+  // 监听键盘回车触发的复制事件，同步复制按钮状态
+  useEffect(() => {
+    const handleCopied = (e: Event) => {
+      if ((e as CustomEvent).detail === item.id) {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
+    }
+    window.addEventListener('item-copied', handleCopied)
+    return () => window.removeEventListener('item-copied', handleCopied)
+  }, [item.id])
+
   return (
     <div
       onClick={() => onSelect(item.id)}
