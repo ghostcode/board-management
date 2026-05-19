@@ -11,11 +11,7 @@ interface SettingsPageProps {
   onToggleDarkMode: () => void
 }
 
-const PLATFORM_MODIFIER = {
-  win32: 'Win',
-  darwin: 'Command',
-  linux: 'Super'
-} as const
+const DEFAULT_SHORTCUT = 'Alt+V' as const
 
 function SettingsPage({ onBack, isMonitoring, onToggleMonitor, onClearAll, alwaysOnTop, onToggleAlwaysOnTop, isDarkMode, onToggleDarkMode }: SettingsPageProps) {
   const [shortcut, setShortcut] = useState('')
@@ -70,8 +66,7 @@ function SettingsPage({ onBack, isMonitoring, onToggleMonitor, onClearAll, alway
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isRecording])
 
-  const modifierKey = PLATFORM_MODIFIER[platform as keyof typeof PLATFORM_MODIFIER] || 'Win'
-  const defaultShortcut = `${modifierKey}+V`
+  const defaultShortcut = DEFAULT_SHORTCUT
 
   const handleReset = () => {
     setShortcut(defaultShortcut)
@@ -133,7 +128,7 @@ function SettingsPage({ onBack, isMonitoring, onToggleMonitor, onClearAll, alway
               </button>
             </div>
             <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
-              点击按钮后按下快捷键组合（如 {modifierKey}+V）
+              点击按钮后按下快捷键组合（如 Alt+V）
             </p>
           </div>
 

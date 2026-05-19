@@ -2,4 +2,4 @@ dist
 dist-electron
 build*
 node_modules
-release-*
+release*

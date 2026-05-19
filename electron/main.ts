@@ -14,7 +14,7 @@ const store = new Store({
     textItems: [],
     imageItems: [],
     settings: {
-      shortcut: process.platform === 'darwin' ? 'Command+V' : 'Super+V',
+      shortcut: 'Alt+V',
       closeBehavior: 'minimize',
       alwaysOnTop: false,
       theme: 'light'
@@ -201,7 +201,7 @@ function normalizeShortcut(shortcut: string): string {
 }
 
 function registerShortcuts() {
-  const settings = store.get('settings', { shortcut: process.platform === 'darwin' ? 'Command+V' : 'Super+V' }) as any
+  const settings = store.get('settings', { shortcut: 'Alt+V' }) as any
   const shortcut = normalizeShortcut(settings.shortcut)
   currentShortcut = shortcut
 
@@ -341,7 +341,7 @@ ipcMain.handle('window-close', () => {
 })
 
 ipcMain.handle('get-settings', () => {
-  return store.get('settings', { shortcut: process.platform === 'darwin' ? 'Command+V' : 'Super+V' })
+  return store.get('settings', { shortcut: 'Alt+V' })
 })
 
 ipcMain.handle('set-shortcut', (_, shortcut: string) => {
